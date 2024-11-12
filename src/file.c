@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #include "file.h"
 
 bool WriteFile(const char *filename, const char *text)
@@ -69,4 +70,21 @@ bool ReadFile(const char *filename)
         perror("Error closing file");
         exit(EXIT_FAILURE);
     }
+}
+
+bool DeleteFile(const char *filename)
+{
+    printf("%s", filename);
+    if (remove(filename) == 0)
+    {
+        printf("File deleted successfully.\n");
+    }
+    else
+    {
+        perror("Error deleting file");
+        fprintf(stderr, "Error deleting file: %s\n", strerror(errno));
+        return false;
+    }
+
+    return true;
 }

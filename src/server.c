@@ -41,7 +41,6 @@ void printHelp()
 
 Command isValidCommand(char *input)
 {
-
     for (int i = 0; i < NUM_COMMANDS; i++)
     {
         if (strcmp(input, command_names[i]) == 0)
@@ -108,21 +107,50 @@ bool parseCommand(const char *str, Command_str *cmd)
 
 bool handleSetCmd(Command_str *cmd)
 {
-
-    printf("handleSetCmd\n");
-
-    WriteFile(cmd->key,cmd->value);
-    return true;
+    return WriteFile(cmd->key, cmd->value);
 }
 
 bool handleGetCmd(Command_str *cmd)
 {
-    return true;
+    return ReadFile(cmd->key);
 }
 
 bool handleDelCmd(Command_str *cmd)
 {
-    return true;
+    return DeleteFile(cmd->key);
+}
+
+bool processCommand(Command_str *cmd){
+
+switch (cmd->command_enum)
+        {
+        case SET:
+            if (!handleSetCmd(cmd))
+            {
+                // printHelp();
+            }
+            break;
+        case GET:
+            if (!handleGetCmd(cmd))
+            {
+                // printHelp();
+            }
+            break;
+        case DEL:
+            if (!handleDelCmd(cmd))
+            {
+                // printHelp();
+            }
+            break;
+        default:
+            printf("Command_enum error. Invalid command\n");
+            printf("Server exit...\n");
+            return false;
+            break;
+        }
+
+        return true;
+
 }
 
 /*
@@ -151,38 +179,20 @@ void chat(int fd)
             break;
         }
 
-        switch (cmd.command_enum)
-        {
-        case SET:
-            if (!handleSetCmd(&cmd))
-            {
-                // printHelp();
-            }
-            break;
-        case GET:
-            if (!handleGetCmd(&cmd))
-            {
-                // printHelp();
-            }
-            break;
-        case DEL:
-            if (!handleDelCmd(&cmd))
-            {
-                // printHelp();
-            }
-            break;
-        default:
-            printf("Command_enum error. Invalid command\n");
-            printf("Server exit...\n");
-            running = false;
-            break;
+        if (processCommand(&cmd)){
+            //Answer to client
+            bzero(buff, MAX);
+            //strcpy(buff, "OK", 2);
+            // and send that buffer to client 
+            write(fd, "OK", sizeof("OK")); 
+  
         }
+
     }
 }
 
 int createSocket()
 {
-
     int fd;
     struct sockaddr_in server_addr;
 
@@ -220,7 +230,6 @@ int createSocket()
 
 int main(void)
 {
-
     int socket_fd;
     struct sockaddr_in server_addr, client;
 
