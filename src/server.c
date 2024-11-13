@@ -52,9 +52,12 @@ Command isValidCommand(char *input)
     return INVALID_COMMAND;
 }
 
-bool parseCommand(const char *str, Command_str *cmd)
+bool parseCommand(char *str, Command_str *cmd)
 {
     char temp[100];
+    size_t len = strlen(str);
+    str[len - 1] = '\0'; // Replace '\n' with '\0'
+
     strncpy(temp, str, sizeof(temp) - 1);
     temp[sizeof(temp) - 1] = '\0'; // Ensure null termination
 
@@ -105,52 +108,28 @@ bool parseCommand(const char *str, Command_str *cmd)
     return true;
 }
 
-bool handleSetCmd(Command_str *cmd)
+bool processCommand(Command_str *cmd)
 {
-    return WriteFile(cmd->key, cmd->value);
-}
 
-bool handleGetCmd(Command_str *cmd)
-{
-    return ReadFile(cmd->key);
-}
+    switch (cmd->command_enum)
+    {
+    case SET:
+        return WriteFile(cmd->key, cmd->value);
+        break;
+    case GET:
+        return ReadFile(cmd->key, cmd->value);
+        break;
+    case DEL:
+        return DeleteFile(cmd->key);
+        break;
+    default:
+        printf("Command_enum error. Invalid command\n");
+        printf("Server exit...\n");
+        return false;
+        break;
+    }
 
-bool handleDelCmd(Command_str *cmd)
-{
-    return DeleteFile(cmd->key);
-}
-
-bool processCommand(Command_str *cmd){
-
-switch (cmd->command_enum)
-        {
-        case SET:
-            if (!handleSetCmd(cmd))
-            {
-                // printHelp();
-            }
-            break;
-        case GET:
-            if (!handleGetCmd(cmd))
-            {
-                // printHelp();
-            }
-            break;
-        case DEL:
-            if (!handleDelCmd(cmd))
-            {
-                // printHelp();
-            }
-            break;
-        default:
-            printf("Command_enum error. Invalid command\n");
-            printf("Server exit...\n");
-            return false;
-            break;
-        }
-
-        return true;
-
+    return true;
 }
 
 /*
@@ -173,21 +152,31 @@ void chat(int fd)
         Command_str cmd;
         if (!parseCommand(buff, &cmd))
         {
-            printf("Parse failure. Invalid command\n");
+            printf("Invalid command\n");
             printHelp();
-            printf("Server exit...\n");
-            break;
+            continue;
         }
 
-        if (processCommand(&cmd)){
-            //Answer to client
+        if (processCommand(&cmd))
+        {
+            // send buffer to client
             bzero(buff, MAX);
-            //strcpy(buff, "OK", 2);
-            // and send that buffer to client 
-            write(fd, "OK", sizeof("OK")); 
-  
-        }
+            strcpy(buff, "OK\n");
+            write(fd, buff, sizeof(buff));
 
+            if(cmd.command_enum == GET) {
+                bzero(buff, MAX);
+                strcpy(buff, cmd.value);
+                write(fd, buff, sizeof(buff));
+            }
+        }
+        else
+        {
+            // send buffer to client
+            bzero(buff, MAX);
+            strcpy(buff, "NOTFOUND\n");
+            write(fd, buff, sizeof(buff));
+        }
     }
 }
 
@@ -251,7 +240,7 @@ int main(void)
     }
     else
     {
-        printf("Server accept the client...\n");
+        printf("Server accept the client...\n\n");
     }
 
     // Chat between client and server

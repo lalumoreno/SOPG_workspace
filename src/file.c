@@ -6,6 +6,8 @@
 #include <errno.h>
 #include "file.h"
 
+#define MAX 100
+
 bool WriteFile(const char *filename, const char *text)
 {
     // File descriptor
@@ -18,7 +20,7 @@ bool WriteFile(const char *filename, const char *text)
     if (file == -1)
     {
         perror("Error opening file");
-        return EXIT_FAILURE;
+        return false;
     }
     // Write to the file
     ssize_t bytes_written = write(file, text, strlen(text));
@@ -28,61 +30,61 @@ bool WriteFile(const char *filename, const char *text)
     {
         perror("Error writing to file");
         close(file); // Close the file descriptor on error
-        return EXIT_FAILURE;
+        return false;
     }
 
     // Close the file
     close(file);
 
-    printf("File created and text written successfully.\n");
+    printf("File [%s] created and text written successfully.\n", filename);
 }
 
-bool ReadFile(const char *filename)
+bool ReadFile(const char *filename, char *text)
 {
     int fd = open(filename, O_RDONLY);
 
     if (fd == -1)
     {
         perror("Error opening file");
-        exit(EXIT_FAILURE);
+        return false;
     }
 
-    char buffer[4096];
+    char buffer[MAX];
     ssize_t bytesRead;
 
     while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
     {
-        if (write(STDOUT_FILENO, buffer, bytesRead) != bytesRead)
-        {
-            perror("Error writing to stdout");
-            exit(EXIT_FAILURE);
+        if (bytesRead > MAX) {
+            perror("Error: file size exceeds buffer capacity");
+            return false;
         }
     }
 
     if (bytesRead == -1)
     {
         perror("Error reading file");
-        exit(EXIT_FAILURE);
+        return false;
+    } else {
+        printf("REad %s",text);
+        memcpy(text, buffer, bytesRead);  // Append to outputBuffer
     }
 
     if (close(fd) == -1)
     {
-        perror("Error closing file");
-        exit(EXIT_FAILURE);
+        perror("Error closing file ");
+        return false;
     }
 }
 
 bool DeleteFile(const char *filename)
 {
-    printf("%s", filename);
     if (remove(filename) == 0)
     {
-        printf("File deleted successfully.\n");
+        printf("File [%s] deleted successfully.\n", filename);
     }
     else
     {
         perror("Error deleting file");
-        fprintf(stderr, "Error deleting file: %s\n", strerror(errno));
         return false;
     }
 
