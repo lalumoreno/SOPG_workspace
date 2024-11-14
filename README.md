@@ -7,5 +7,8 @@ Escribir un servidor TCP que permite almacenar información ASCII en forma de cl
 Build: 
 ./build.sh
 
-Ejecutar: 
-./server 
+Ejecutar server: 
+./run.sh 
+
+Ejecutar cliente: 
+nc localhost 5000

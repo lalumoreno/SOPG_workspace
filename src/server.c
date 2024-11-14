@@ -81,7 +81,7 @@ bool parseCommand(char *input, Command_str *cmd)
     strncpy(cmd->key, token, sizeof(cmd->key) - 1);
     cmd->key[sizeof(cmd->key) - 1] = '\0';
 
-    // Check for extra tokens
+    // Check for third token
     token = strtok(NULL, " ");
 
     switch (cmd->command_enum)
@@ -95,19 +95,26 @@ bool parseCommand(char *input, Command_str *cmd)
 
         strncpy(cmd->value, token, sizeof(cmd->value) - 1);
         cmd->value[sizeof(cmd->value) - 1] = '\0';
+
+        // Check for extra token
+        token = strtok(NULL, " ");
+        if (token != NULL)
+        {
+            printf("Invalid usage. More than 3 tokens...\n");
+            return false; // More than 3 tokens.
+        }
         break;
 
     default:
         if (token != NULL)
         {
-            printf("Invalid usage. More than 3 tokens...\n");
+            printf("Invalid usage. More than 2 tokens...\n");
             return false; // More than 3 tokens.
-
-            break;
         }
-
-        return true;
+        break;
     }
+
+    return true;
 }
 
 /**
