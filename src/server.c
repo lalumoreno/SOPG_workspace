@@ -31,14 +31,11 @@ typedef struct
     char value[MAX];
 } Command_str;
 
-void printHelp()
-{
-    printf("\nUsage: \n");
-    printf("SET <key> <value>\n");
-    printf("GET <key>\n");
-    printf("DEL <key>\n\n");
-}
-
+/**
+ * @brief Check if user input is a valid command for the server
+ * @param user input
+ * @retval Command type
+ */
 Command isValidCommand(char *input)
 {
     for (int i = 0; i < NUM_COMMANDS; i++)
@@ -52,16 +49,21 @@ Command isValidCommand(char *input)
     return INVALID_COMMAND;
 }
 
-bool parseCommand(char *str, Command_str *cmd)
+/**
+ * @brief Parse command to get key and value
+ * @param user input and pointer to Command_str to save key and value
+ * @retval True if command has valid tokens, false otherwise
+ */
+bool parseCommand(char *input, Command_str *cmd)
 {
-    char temp[100];
-    size_t len = strlen(str);
-    str[len - 1] = '\0'; // Replace '\n' with '\0'
+    char temp[MAX];
+    size_t len = strlen(input);
+    input[len - 1] = '\0'; // Replace '\n' with '\0'
 
-    strncpy(temp, str, sizeof(temp) - 1);
+    strncpy(temp, input, sizeof(temp) - 1);
     temp[sizeof(temp) - 1] = '\0'; // Ensure null termination
 
-    char *token = strtok(temp, " ");
+    char *token = strtok(temp, " "); // Split input by " "
     if (token == NULL)
         return false; // No tokens found
 
@@ -87,7 +89,7 @@ bool parseCommand(char *str, Command_str *cmd)
     case SET:
         if (token == NULL)
         {
-            printf("Invalid usage. Less than 3 arguments...\n");
+            printf("Invalid usage. Less than 3 tokens...\n");
             return false; // Less than 3 tokens
         }
 
@@ -98,16 +100,21 @@ bool parseCommand(char *str, Command_str *cmd)
     default:
         if (token != NULL)
         {
-            printf("Invalid usage. More than 3 arguments...\n");
-            return false; // More than 3 tokens, invalid input
+            printf("Invalid usage. More than 3 tokens...\n");
+            return false; // More than 3 tokens.
+
+            break;
         }
 
-        break;
+        return true;
     }
-
-    return true;
 }
 
+/**
+ * @brief Handle each command
+ * @param pointer to Command_str
+ * @retval True if command execution was successful, false otherwise
+ */
 bool processCommand(Command_str *cmd)
 {
 
@@ -131,8 +138,9 @@ bool processCommand(Command_str *cmd)
     return true;
 }
 
-/*
- * @param
+/**
+ * @brief Start chat between server and client connected
+ * @param file descriptor to the client connection
  */
 void chat(int fd)
 {
@@ -168,7 +176,6 @@ void chat(int fd)
             write(fd, buff, sizeof(buff));
 
             printf("Invalid command\n");
-            // printHelp();
             continue;
         }
 
@@ -181,6 +188,7 @@ void chat(int fd)
 
             if (cmd.command_enum == GET)
             {
+                // send buffer to client
                 bzero(buff, MAX);
                 strcpy(buff, cmd.value);
                 buff[strlen(buff)] = '\n';
@@ -197,6 +205,10 @@ void chat(int fd)
     }
 }
 
+/**
+ * @brief Create TCP socket for server
+ * @retval SUCCESS if socket creation was successful, ERROR otherwise
+ */
 int createSocket()
 {
     int fd;
@@ -234,6 +246,9 @@ int createSocket()
     return fd;
 }
 
+/**
+ * @brief Main process: launch server and listen for TCP connections
+ */
 int main(void)
 {
     int socket_fd;
