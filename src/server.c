@@ -87,7 +87,7 @@ bool parseCommand(char *str, Command_str *cmd)
     case SET:
         if (token == NULL)
         {
-            printf("Less than 3 tokens...\n");
+            printf("Invalid usage. Less than 3 arguments...\n");
             return false; // Less than 3 tokens
         }
 
@@ -98,7 +98,7 @@ bool parseCommand(char *str, Command_str *cmd)
     default:
         if (token != NULL)
         {
-            printf("More than 3 tokens...\n");
+            printf("Invalid usage. More than 3 arguments...\n");
             return false; // More than 3 tokens, invalid input
         }
 
@@ -123,8 +123,7 @@ bool processCommand(Command_str *cmd)
         return DeleteFile(cmd->key);
         break;
     default:
-        printf("Command_enum error. Invalid command\n");
-        printf("Server exit...\n");
+        printf("Invalid command\n");
         return false;
         break;
     }
@@ -140,6 +139,7 @@ void chat(int fd)
     char buff[MAX];
     int n;
     bool running = true;
+    ssize_t bytesRead;
 
     // infinite loop for chat
     while (running)
@@ -147,13 +147,28 @@ void chat(int fd)
         bzero(buff, MAX);
 
         // read the message from client
-        read(fd, buff, sizeof(buff));
+        bytesRead = read(fd, buff, sizeof(buff));
+
+        if (bytesRead == 0)
+        {
+            printf("Client disconnected...\n\n");
+            running = false;
+        }
+        else if (bytesRead == -1)
+        {
+            perror("Error reading from client");
+        }
 
         Command_str cmd;
         if (!parseCommand(buff, &cmd))
         {
+            // send buffer to client
+            bzero(buff, MAX);
+            strcpy(buff, "Invalid command\n");
+            write(fd, buff, sizeof(buff));
+
             printf("Invalid command\n");
-            printHelp();
+            // printHelp();
             continue;
         }
 
@@ -164,9 +179,11 @@ void chat(int fd)
             strcpy(buff, "OK\n");
             write(fd, buff, sizeof(buff));
 
-            if(cmd.command_enum == GET) {
+            if (cmd.command_enum == GET)
+            {
                 bzero(buff, MAX);
                 strcpy(buff, cmd.value);
+                buff[strlen(buff)] = '\n';
                 write(fd, buff, sizeof(buff));
             }
         }
@@ -230,21 +247,25 @@ int main(void)
         exit(0);
     }
 
-    // Accept incoming client connection
-    int len = sizeof(client);
-    int connection_fd = accept(socket_fd, (struct sockaddr *)&client, &len);
-    if (connection_fd < 0)
+    while (true)
     {
-        printf("Server accept failed...\n");
-        exit(0);
-    }
-    else
-    {
-        printf("Server accept the client...\n\n");
-    }
 
-    // Chat between client and server
-    chat(connection_fd);
+        // Accept incoming client connection
+        int len = sizeof(client);
+        int connection_fd = accept(socket_fd, (struct sockaddr *)&client, &len);
+        if (connection_fd < 0)
+        {
+            printf("Server accept failed...\n");
+            break;
+        }
+        else
+        {
+            printf("Client connected...\n");
+        }
+
+        // Chat between client and server
+        chat(connection_fd);
+    }
 
     // Close socket
     close(socket_fd);

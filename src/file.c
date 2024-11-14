@@ -41,39 +41,55 @@ bool WriteFile(const char *filename, const char *text)
 
 bool ReadFile(const char *filename, char *text)
 {
+    memset(text, 0, MAX); // Usamos memset en lugar de bzero
     int fd = open(filename, O_RDONLY);
-
     if (fd == -1)
     {
         perror("Error opening file");
+        printf("File [%s] does not exist\n", filename);
         return false;
     }
 
     char buffer[MAX];
-    ssize_t bytesRead;
+    memset(buffer, 0, MAX); // Inicializa el buffer
 
+    ssize_t totalBytesRead = 0;
+    ssize_t bytesRead = 0;
+
+    // Lee el archivo en bloques
     while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
     {
-        if (bytesRead > MAX) {
+        if (totalBytesRead + bytesRead >= MAX)
+        {
             perror("Error: file size exceeds buffer capacity");
+            close(fd); // Cerrar el archivo antes de retornar
             return false;
         }
+
+        // Acumula los datos leídos en `text`
+        memcpy(text + totalBytesRead, buffer, bytesRead);
+        totalBytesRead += bytesRead;
     }
 
     if (bytesRead == -1)
     {
         perror("Error reading file");
+        close(fd); // Cerrar el archivo antes de retornar
         return false;
-    } else {
-        printf("REad %s",text);
-        memcpy(text, buffer, bytesRead);  // Append to outputBuffer
     }
+
+    // Asegúrate de que el texto esté correctamente terminado en null
+    text[totalBytesRead] = '\0';
+
+    printf("File [%s] read sucessfully\n", filename);
 
     if (close(fd) == -1)
     {
-        perror("Error closing file ");
+        perror("Error closing file");
         return false;
     }
+
+    return true;
 }
 
 bool DeleteFile(const char *filename)
@@ -85,6 +101,7 @@ bool DeleteFile(const char *filename)
     else
     {
         perror("Error deleting file");
+        printf("File [%s] does not exist\n", filename);
         return false;
     }
 
