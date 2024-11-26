@@ -56,14 +56,10 @@ Command isValidCommand(char *input)
  */
 bool parseCommand(char *input, Command_str *cmd)
 {
-    char temp[MAX];
     size_t len = strlen(input);
     input[len - 1] = '\0'; // Replace '\n' with '\0'
 
-    strncpy(temp, input, sizeof(temp) - 1);
-    temp[sizeof(temp) - 1] = '\0'; // Ensure null termination
-
-    char *token = strtok(temp, " "); // Split input by " "
+    char *token = strtok(input, " "); // Split input by " "
     if (token == NULL)
         return false; // No tokens found
 
@@ -108,7 +104,7 @@ bool parseCommand(char *input, Command_str *cmd)
     default:
         if (token != NULL)
         {
-            printf("Invalid usage. More than 2 tokens...\n");
+            perror("Invalid usage. More than 2 tokens...");
             return false; // More than 3 tokens.
         }
         break;
@@ -137,7 +133,7 @@ bool processCommand(Command_str *cmd)
         return DeleteFile(cmd->key);
         break;
     default:
-        printf("Invalid command\n");
+        perror("Invalid command");
         return false;
         break;
     }
@@ -161,7 +157,7 @@ void chat(int fd)
 
     if (bytesRead == 0)
     {
-        printf("Client disconnected...\n\n");
+        perror("Client disconnected...");
     }
     else if (bytesRead == -1)
     {
@@ -174,14 +170,14 @@ void chat(int fd)
         // send buffer to client
         bzero(buff, MAX);
         strcpy(buff, "Invalid command\n");
-        write(fd, buff, sizeof(buff));
+        write(fd, buff, strlen(buff));
     }
     else if (processCommand(&cmd))
     {
         // send buffer to client
         bzero(buff, MAX);
         strcpy(buff, "OK\n");
-        write(fd, buff, sizeof(buff));
+        write(fd, buff, strlen(buff));
 
         if (cmd.command_enum == GET)
         {
@@ -189,7 +185,7 @@ void chat(int fd)
             bzero(buff, MAX);
             strcpy(buff, cmd.value);
             buff[strlen(buff)] = '\n';
-            write(fd, buff, sizeof(buff));
+            write(fd, buff, strlen(buff));
         }
      }
      else
@@ -197,7 +193,7 @@ void chat(int fd)
         // send buffer to client
         bzero(buff, MAX);
         strcpy(buff, "NOTFOUND\n");
-        write(fd, buff, sizeof(buff));
+        write(fd, buff, strlen(buff));
     }
 }
 
@@ -214,7 +210,7 @@ int createSocket()
     fd = socket(AF_INET, SOCK_STREAM, 0);
     if (fd == -1)
     {
-        printf("socket creation failed...\n");
+        perror("socket creation failed...");
         return ERROR;
     }
 
@@ -227,14 +223,14 @@ int createSocket()
     // Bind socket
     if ((bind(fd, (struct sockaddr *)&server_addr, sizeof(server_addr))) != SUCCESS)
     {
-        printf("Socket bind failed...\n");
+        perror("Socket bind failed...");
         return ERROR;
     }
 
     // Start listening
     if ((listen(fd, 5)) != SUCCESS)
     {
-        printf("Listen failed...\n");
+        perror("Listen failed...");
         return ERROR;
     }
 
@@ -254,7 +250,7 @@ int main(void)
 
     if (socket_fd == ERROR)
     {
-        printf("createSocket failed...\n");
+        perror("createSocket failed...");
         exit(0);
     }
 
@@ -266,7 +262,7 @@ int main(void)
         int connection_fd = accept(socket_fd, (struct sockaddr *)&client, (socklen_t *)&len);
         if (connection_fd < 0)
         {
-            printf("Server accept failed...\n");
+            perror("Server accept failed...");
             break;
         }
 
