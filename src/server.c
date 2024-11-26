@@ -152,62 +152,52 @@ bool processCommand(Command_str *cmd)
 void chat(int fd)
 {
     char buff[MAX];
-    bool running = true;
     ssize_t bytesRead;
 
-    // infinite loop for chat
-    while (running)
+    bzero(buff, MAX);
+
+    // read the message from client
+    bytesRead = read(fd, buff, sizeof(buff));
+
+    if (bytesRead == 0)
     {
+        printf("Client disconnected...\n\n");
+    }
+    else if (bytesRead == -1)
+    {
+        perror("Error reading from client");
+    }
+
+    Command_str cmd;
+    if (!parseCommand(buff, &cmd))
+    {
+        // send buffer to client
         bzero(buff, MAX);
+        strcpy(buff, "Invalid command\n");
+        write(fd, buff, sizeof(buff));
+    }
+    else if (processCommand(&cmd))
+    {
+        // send buffer to client
+        bzero(buff, MAX);
+        strcpy(buff, "OK\n");
+        write(fd, buff, sizeof(buff));
 
-        // read the message from client
-        bytesRead = read(fd, buff, sizeof(buff));
-
-        if (bytesRead == 0)
-        {
-            printf("Client disconnected...\n\n");
-            running = false;
-        }
-        else if (bytesRead == -1)
-        {
-            perror("Error reading from client");
-        }
-
-        Command_str cmd;
-        if (!parseCommand(buff, &cmd))
+        if (cmd.command_enum == GET)
         {
             // send buffer to client
             bzero(buff, MAX);
-            strcpy(buff, "Invalid command\n");
-            write(fd, buff, sizeof(buff));
-
-            printf("Invalid command\n");
-            continue;
-        }
-
-        if (processCommand(&cmd))
-        {
-            // send buffer to client
-            bzero(buff, MAX);
-            strcpy(buff, "OK\n");
-            write(fd, buff, sizeof(buff));
-
-            if (cmd.command_enum == GET)
-            {
-                // send buffer to client
-                bzero(buff, MAX);
-                strcpy(buff, cmd.value);
-                buff[strlen(buff)] = '\n';
-                write(fd, buff, sizeof(buff));
-            }
-        }
-        else
-        {
-            // send buffer to client
-            bzero(buff, MAX);
-            strcpy(buff, "NOTFOUND\n");
+            strcpy(buff, cmd.value);
+            buff[strlen(buff)] = '\n';
             write(fd, buff, sizeof(buff));
         }
+     }
+     else
+     {
+        // send buffer to client
+        bzero(buff, MAX);
+        strcpy(buff, "NOTFOUND\n");
+        write(fd, buff, sizeof(buff));
     }
 }
 
@@ -279,13 +269,12 @@ int main(void)
             printf("Server accept failed...\n");
             break;
         }
-        else
-        {
-            printf("Client connected...\n");
-        }
 
-        // Chat between client and server
-        chat(connection_fd);
+        printf("Client connected...\n");
+        chat(connection_fd); // Chat between client and server
+        
+        printf("Client disconnected...\n");
+        close(connection_fd);
     }
 
     // Close socket
