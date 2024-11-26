@@ -152,7 +152,6 @@ bool processCommand(Command_str *cmd)
 void chat(int fd)
 {
     char buff[MAX];
-    int n;
     bool running = true;
     ssize_t bytesRead;
 
@@ -259,7 +258,7 @@ int createSocket()
 int main(void)
 {
     int socket_fd;
-    struct sockaddr_in server_addr, client;
+    struct sockaddr_in client;
 
     socket_fd = createSocket();
 
@@ -274,7 +273,7 @@ int main(void)
 
         // Accept incoming client connection
         int len = sizeof(client);
-        int connection_fd = accept(socket_fd, (struct sockaddr *)&client, &len);
+        int connection_fd = accept(socket_fd, (struct sockaddr *)&client, (socklen_t *)&len);
         if (connection_fd < 0)
         {
             printf("Server accept failed...\n");

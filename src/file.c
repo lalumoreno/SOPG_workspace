@@ -35,6 +35,8 @@ bool WriteFile(const char *filename, const char *text)
     close(file);
 
     printf("File [%s] created and text written successfully.\n", filename);
+
+    return true;
 }
 
 /**
